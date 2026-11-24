@@ -55,13 +55,8 @@ dialog{width:min(520px,calc(100vw - 24px));max-height:80svh;background:var(--pap
 @keyframes glyph-tide{from{transform:none}to{transform:translateY(var(--shift,8%))}}
 .imagefield.reels-ready>img{animation:none}.imagefield:not(.hero-visible) .hero-reels i::before{animation-play-state:paused}
 [data-theme=dark] .imagefield::after{content:"";position:absolute;inset:0;background:rgba(0,0,0,.26);pointer-events:none}
-#theme{position:relative;width:48px;height:32px;flex:none;border:1px solid var(--line);border-radius:20px;background:var(--paper);color:var(--txt)}#theme svg{position:absolute;left:5px;top:5px;width:20px;height:20px;transition:transform .6s cubic-bezier(.22,.75,.2,1)}[data-theme=dark] #theme svg{transform:translateX(16px) rotate(180deg)}
-.theme-roll::view-transition-group(root){animation-duration:.7s}.theme-roll::view-transition-old(root),.theme-roll::view-transition-new(root){animation:none;mix-blend-mode:normal}
-.theme-roll[data-theme=dark]::view-transition-new(root){animation:theme-sweep .7s cubic-bezier(.35,.02,.2,1) both}
-.theme-roll[data-theme=light]::view-transition-old(root){z-index:1;animation:theme-sweep .7s cubic-bezier(.35,.02,.2,1) reverse both}
-@keyframes theme-sweep{from{clip-path:circle(10px at var(--roll-x) var(--roll-y))}45%{clip-path:circle(30vmax at 69% 29%)}to{clip-path:circle(80vmax at 50% 50%)}}
 @media(max-width:480px){.hero-reels{--anchor:56%}}
-@media(prefers-reduced-motion:reduce){.hero-reels{display:none}#theme svg{transition:none}}
+@media(prefers-reduced-motion:reduce){.hero-reels{display:none}}
 </style></head>
 <body><a class="skip" href="#content" data-i="skip">跳到正文</a>
 <svg style="display:none" xmlns="http://www.w3.org/2000/svg"><symbol id="i-find" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.6"/><path d="m16 16 5 5"/></symbol><symbol id="i-theme" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.7"/><path d="M12 3.4a8.6 8.6 0 0 1 0 17.2z" fill="currentColor" stroke="none"/></symbol><symbol id="i-menu" viewBox="0 0 24 24"><path d="M3 8h18M3 16h18"/></symbol></svg>
@@ -155,7 +150,6 @@ function searchResults(){
  const more=$('finder').querySelector('.textlink');more.href='https://www.hyfont.com/typefaces'+(q?'?q='+encodeURIComponent(term):'');more.querySelector('span').textContent=q?(lang==='zh'?'搜索官网完整字库':'Search the live catalogue'):t('all');
 }
 function updateTheme(){document.documentElement.dataset.theme=dark?'dark':'light';$('theme').setAttribute('aria-pressed',String(dark));document.querySelector('[name=theme-color]').content=dark?'#191919':'#fafafa'}
-const motionPreference=matchMedia('(prefers-reduced-motion:reduce)');
 function animateBanner(){
  if(!CSS.supports('width','1cqw'))return;
  const field=document.querySelector('.imagefield'),art=field.querySelector('img'),reels=document.createElement('div');
@@ -164,15 +158,8 @@ function animateBanner(){
  field.append(reels);field.classList.add('reels-ready');
  new IntersectionObserver(([entry])=>field.classList.toggle('hero-visible',entry.isIntersecting)).observe(field);
 }
-let themeTransition;
 function toggleTheme(){
- const root=document.documentElement,apply=()=>{dark=!dark;updateTheme();remember('theme',dark?'dark':'light')};
- if(themeTransition)return;
- if(motionPreference.matches||!document.startViewTransition){apply();return}
- const r=$('theme').querySelector('svg').getBoundingClientRect();
- root.style.setProperty('--roll-x',`${r.left+r.width/2}px`);root.style.setProperty('--roll-y',`${r.top+r.height/2}px`);
- root.classList.add('theme-roll');themeTransition=document.startViewTransition(apply);
- themeTransition.finished.finally(()=>{themeTransition=null;root.classList.remove('theme-roll')});
+ dark=!dark;updateTheme();remember('theme',dark?'dark':'light');
 }
 animateBanner();
 function translate(){document.documentElement.lang=lang==='zh'?'zh-CN':'en';document.title=lang==='zh'?'HyFont Studio — 多语种字体设计':'HyFont Studio — Multilingual type design';document.querySelectorAll('[data-i]').forEach(el=>el.textContent=t(el.dataset.i));document.querySelectorAll('[data-label]').forEach(el=>title(el,t(el.dataset.label)));document.querySelectorAll('[data-alt]').forEach(el=>el.alt=t(el.dataset.alt));$('locale').textContent=lang==='zh'?'EN':'中';title($('locale'),lang==='zh'?'Switch to English':'切换至中文');$('query').placeholder=t('input');title($('motion'),t(paused?'resume':'pause'));renderCards();searchResults()}
