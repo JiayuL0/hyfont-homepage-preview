@@ -49,6 +49,19 @@ dialog{width:min(520px,calc(100vw - 24px));max-height:80svh;background:var(--pap
 .case-grid figure{margin:0;min-width:0}.case-grid img{width:100%;height:auto;aspect-ratio:4/3;object-fit:cover;border-radius:13px;background:var(--hover)}.case-grid h3{margin:clamp(12px,1.3vw,20px) 0 6px;font-size:clamp(20px,1.65vw,28px);line-height:1.25;letter-spacing:-.035em}.case-grid p{font-size:clamp(14px,1.02vw,17px);line-height:1.65;color:var(--muted)}
 @media(max-width:850px){.case-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:560px){.case-grid{grid-template-columns:1fr}}
+.imagefield{container-type:size}.hero-reels{--art-w:max(100cqw,266.666667cqh);--anchor:53%;pointer-events:none;position:absolute;width:var(--art-w);aspect-ratio:8/3;top:50%;left:var(--anchor);transform:translate(calc(-1 * var(--anchor)),-50%);display:grid;grid-template-columns:45.45% 29.55% 25%}
+.hero-reels i{position:relative;overflow:hidden}.hero-reels i::before{content:"";position:absolute;inset:-20% 0;background-image:var(--art);background-repeat:repeat-y;background-size:var(--art-w) calc(var(--art-w) * .375);background-position:var(--art-x,0%) center;animation:glyph-tide var(--period,9s) ease-in-out infinite alternate}
+.hero-reels i:nth-child(2){--art-x:64.51%;--period:12s;--shift:-4.5%}.hero-reels i:nth-child(3){--art-x:100%;--period:8s;--shift:-8.5%}
+@keyframes glyph-tide{from{transform:none}to{transform:translateY(var(--shift,8%))}}
+.imagefield.reels-ready>img{animation:none}.imagefield:not(.hero-visible) .hero-reels i::before{animation-play-state:paused}
+[data-theme=dark] .imagefield::after{content:"";position:absolute;inset:0;background:rgba(0,0,0,.26);pointer-events:none}
+#theme{position:relative;width:48px;height:32px;flex:none;border:1px solid var(--line);border-radius:20px;background:var(--paper);color:var(--txt)}#theme svg{position:absolute;left:5px;top:5px;width:20px;height:20px;transition:transform .6s cubic-bezier(.22,.75,.2,1)}[data-theme=dark] #theme svg{transform:translateX(16px) rotate(180deg)}
+.theme-roll::view-transition-group(root){animation-duration:.7s}.theme-roll::view-transition-old(root),.theme-roll::view-transition-new(root){animation:none;mix-blend-mode:normal}
+.theme-roll[data-theme=dark]::view-transition-new(root){animation:theme-sweep .7s cubic-bezier(.35,.02,.2,1) both}
+.theme-roll[data-theme=light]::view-transition-old(root){z-index:1;animation:theme-sweep .7s cubic-bezier(.35,.02,.2,1) reverse both}
+@keyframes theme-sweep{from{clip-path:circle(10px at var(--roll-x) var(--roll-y))}45%{clip-path:circle(30vmax at 69% 29%)}to{clip-path:circle(80vmax at 50% 50%)}}
+@media(max-width:480px){.hero-reels{--anchor:56%}}
+@media(prefers-reduced-motion:reduce){.hero-reels{display:none}#theme svg{transition:none}}
 </style></head>
 <body><a class="skip" href="#content" data-i="skip">跳到正文</a>
 <svg style="display:none" xmlns="http://www.w3.org/2000/svg"><symbol id="i-find" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.6"/><path d="m16 16 5 5"/></symbol><symbol id="i-theme" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.7"/><path d="M12 3.4a8.6 8.6 0 0 1 0 17.2z" fill="currentColor" stroke="none"/></symbol><symbol id="i-menu" viewBox="0 0 24 24"><path d="M3 8h18M3 16h18"/></symbol></svg>
@@ -142,13 +155,33 @@ function searchResults(){
  const more=$('finder').querySelector('.textlink');more.href='https://www.hyfont.com/typefaces'+(q?'?q='+encodeURIComponent(term):'');more.querySelector('span').textContent=q?(lang==='zh'?'搜索官网完整字库':'Search the live catalogue'):t('all');
 }
 function updateTheme(){document.documentElement.dataset.theme=dark?'dark':'light';$('theme').setAttribute('aria-pressed',String(dark));document.querySelector('[name=theme-color]').content=dark?'#191919':'#fafafa'}
+const motionPreference=matchMedia('(prefers-reduced-motion:reduce)');
+function animateBanner(){
+ if(!CSS.supports('width','1cqw'))return;
+ const field=document.querySelector('.imagefield'),art=field.querySelector('img'),reels=document.createElement('div');
+ reels.className='hero-reels';reels.setAttribute('aria-hidden','true');reels.style.setProperty('--art',`url("${art.src}")`);
+ for(let i=0;i<3;i++)reels.append(document.createElement('i'));
+ field.append(reels);field.classList.add('reels-ready');
+ new IntersectionObserver(([entry])=>field.classList.toggle('hero-visible',entry.isIntersecting)).observe(field);
+}
+let themeTransition;
+function toggleTheme(){
+ const root=document.documentElement,apply=()=>{dark=!dark;updateTheme();remember('theme',dark?'dark':'light')};
+ if(themeTransition)return;
+ if(motionPreference.matches||!document.startViewTransition){apply();return}
+ const r=$('theme').querySelector('svg').getBoundingClientRect();
+ root.style.setProperty('--roll-x',`${r.left+r.width/2}px`);root.style.setProperty('--roll-y',`${r.top+r.height/2}px`);
+ root.classList.add('theme-roll');themeTransition=document.startViewTransition(apply);
+ themeTransition.finished.finally(()=>{themeTransition=null;root.classList.remove('theme-roll')});
+}
+animateBanner();
 function translate(){document.documentElement.lang=lang==='zh'?'zh-CN':'en';document.title=lang==='zh'?'HyFont Studio — 多语种字体设计':'HyFont Studio — Multilingual type design';document.querySelectorAll('[data-i]').forEach(el=>el.textContent=t(el.dataset.i));document.querySelectorAll('[data-label]').forEach(el=>title(el,t(el.dataset.label)));document.querySelectorAll('[data-alt]').forEach(el=>el.alt=t(el.dataset.alt));$('locale').textContent=lang==='zh'?'EN':'中';title($('locale'),lang==='zh'?'Switch to English':'切换至中文');$('query').placeholder=t('input');title($('motion'),t(paused?'resume':'pause'));renderCards();searchResults()}
 function setMenu(trigger,menu,on){menu.hidden=!on;trigger.setAttribute('aria-expanded',String(on))}
 const menus=[[$('serviceToggle'),$('serviceNav')],[$('menuToggle'),$('mobileNav')]];
 function closeMenus(){for(const [b,m] of menus)setMenu(b,m,false)}
 for(const [b,m] of menus){b.onclick=()=>{const open=m.hidden;closeMenus();setMenu(b,m,open)};m.onclick=()=>closeMenus()}
 document.addEventListener('click',e=>{if(!e.target.closest('.bar'))closeMenus()});document.addEventListener('keydown',e=>{if(e.key==='Escape'){const shown=menus.find(([b,m])=>!m.hidden);if(shown){closeMenus();shown[0].focus()}}});matchMedia('(max-width:680px)').addEventListener('change',closeMenus);
-$('theme').onclick=()=>{dark=!dark;updateTheme();remember('theme',dark?'dark':'light')};$('locale').onclick=()=>{closeMenus();lang=lang==='zh'?'en':'zh';remember('lang',lang);translate()};
+$('theme').onclick=toggleTheme;$('locale').onclick=()=>{closeMenus();lang=lang==='zh'?'en':'zh';remember('lang',lang);translate()};
 function find(){closeMenus();$('query').value='';searchResults();$('finder').showModal();$('query').focus();}
 $('searchOpen').onclick=find;$('closeSearch').onclick=()=>$('finder').close();$('query').oninput=searchResults;$('query').onkeydown=e=>{if(e.key==='ArrowDown'){$('results').querySelector('a')?.focus();e.preventDefault()}};$('finder').addEventListener('close',()=>$('searchOpen').focus());$('finder').onclick=e=>{if(e.target===$('finder')){const r=$('finder').getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)$('finder').close()}};
 $('motion').onclick=()=>{paused=!paused;$('ribbon').classList.toggle('paused',paused);$('motion').textContent=paused?'▶':'Ⅱ';$('motion').setAttribute('aria-pressed',String(paused));title($('motion'),t(paused?'resume':'pause'))};updateTheme();translate();
